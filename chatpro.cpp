@@ -26,7 +26,6 @@ QByteArray ChatPro::buildRequestBody(const QJsonArray &messages, const QJsonArra
     requestBody["tools"] = tools;
     QJsonDocument doc(requestBody);
     qDebug() << "Request:" << doc.toJson(QJsonDocument::Indented);
-    //QByteArray data = doc.toJson();
     return qJsonObjectToQByteArray(requestBody);
 }
 
@@ -135,10 +134,10 @@ QJsonArray ChatPro::parsetoolCallPieces(const QList<QJsonArray> &toolCallsChunks
             QJsonValue argsVal = toolCall["function"].toObject()["arguments"];
             // 直接跳过args为null的内容，因为第一条有可能是args为null的无效数据
             if(argsVal.isNull()){
-                qDebug() << toolCall;
-                qDebug() << "是Null========================================";
+                //qDebug() << toolCall;
                 continue;
             }
+
             // 初始化或获取现有状态
             ToolCallState &state = toolCallMap[index];
 
@@ -150,13 +149,23 @@ QJsonArray ChatPro::parsetoolCallPieces(const QList<QJsonArray> &toolCallsChunks
                 state.metadata["function"] = QJsonObject{
                     {"name", funcObj["name"]}
                 };
+                // 当为保存记录时，手动装载参数（AI装载较长的messages信息，容易出错）
+                if(funcObj["name"].toString() == "save_messages"){
+                    QJsonArray rsToolCalls;
+                    toolCall["id"] = state.metadata["id"];
+                    toolCall["type"] = state.metadata["type"];
+                    funcObj["arguments"] = "{\"messages\":\"[]\"}";
+                    toolCall["function"] = funcObj;
+                    toolCall["index"] = 0;
+                    rsToolCalls.append(toolCall);
+                    return rsToolCalls;
+                }
             }
             if (argsVal.isString())
                 // 拼接字符串内容
                 state.arguments += argsVal.toString();
-
-            if (state.arguments.endsWith("}")) {
-
+            qDebug() << state.arguments;
+            if (state.arguments.endsWith("}") && !QJsonDocument::fromJson(state.arguments.toUtf8()).isNull()) {
                 state.isCompleted = true;
             }
         }

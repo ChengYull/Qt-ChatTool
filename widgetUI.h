@@ -28,7 +28,7 @@ private slots:
 
     void receiveMsg(QString msg);
     void requestEnd(QJsonArray toolCalls, bool isFunctionCall);
-
+    void loadMessages(QJsonObject messages);
 private:
     Ui::Widget *ui;
 };

@@ -37,7 +37,7 @@ public:
     QByteArray qJsonObjectToQByteArray(const QJsonObject &obj);
     // 响应
     QNetworkReply* getReply(const QJsonArray &messages, const QJsonArray &tools);
-    // 构建信息（用户、助手、工具）
+    // 构建信息（系统、用户、助手、工具）
     QJsonObject buildMessage(const QString &message, MessageType type,
                                  const QJsonArray &toolCalls = QJsonArray(),
                                  const QString &name = "",
@@ -48,7 +48,7 @@ public:
     QJsonObject getMessage(const QJsonObject &chunk);
     // 获取内容
     QString getContent(const QJsonObject &message);
-
+    // 从多条不完整的ToolCalls字段中解析出完整的字段
     QJsonArray parsetoolCallPieces(const QList<QJsonArray> &toolCalls);
 
     void ConnectReply(const QJsonArray &messages, const QJsonArray &tools);

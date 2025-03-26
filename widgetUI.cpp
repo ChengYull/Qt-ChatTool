@@ -6,7 +6,7 @@ Widget::Widget(QWidget *parent)
     , ui(new Ui::Widget)
 {
     ui->setupUi(this);
-    m_messages.append(ChatPro::Get()->buildMessage("你是一个非常活泼的AI，回复要积极主动，调用函数失败后不要尝试重复调用", MessageType::SYSTEM_MESSAGE));
+    m_messages.append(ChatPro::Get()->buildMessage("你是一个非常活泼的AI，回复要积极主动", MessageType::SYSTEM_MESSAGE));
     m_tools = FuncTool::Get()->Tools();
 
     // 初始化定时器（避免在槽函数中更新）
@@ -28,6 +28,9 @@ Widget::Widget(QWidget *parent)
     connect(ChatPro::Get(), &ChatPro::receiveContent, this, &Widget::receiveMsg);
     // 请求结束
     connect(ChatPro::Get(), &ChatPro::respEnd, this, &Widget::requestEnd);
+
+    // 收到加载记录请求
+    connect(FuncTool::Get(), &FuncTool::loadMessages, this, &Widget::loadMessages);
 }
 
 Widget::~Widget()
@@ -63,13 +66,25 @@ void Widget::requestEnd(QJsonArray toolCalls, bool isFunctionCall)
 {
     // 如果是函数调用
     if(isFunctionCall){
+        // 如果没有函数名直接返回
+        if(toolCalls[0].toObject()["function"].toObject()["name"].isNull())
+            return;
         m_messages.append(ChatPro::Get()->buildMessage("", MessageType::ASSISTANT_MESSAGE, toolCalls));
-        for(const QJsonValueRef &tool : toolCalls){
+        foreach(const QJsonValue &tool, toolCalls){
             QJsonObject jsTool = tool.toObject();
-            qDebug() << "---" << jsTool;
             QString id = jsTool["id"].toString();
+
+
             QString name = jsTool["function"].toObject()["name"].toString();
             QJsonObject args = ChatPro::Get()->qStringToQJsonObject(jsTool["function"].toObject()["arguments"].toString());
+            if(name == "save_messages"){
+
+                QJsonArray messages = m_messages;
+                messages.removeLast();
+                messages.removeLast();
+                args["messages"] = messages;
+            }
+
             QString result = FuncTool::Get()->executeFunction(name, args);
             m_messages.append(ChatPro::Get()->buildMessage(result, MessageType::TOOL_MESSAGE, QJsonArray(), name, id));
         }
@@ -79,5 +94,12 @@ void Widget::requestEnd(QJsonArray toolCalls, bool isFunctionCall)
         // 普通消息
         m_messages.append(ChatPro::Get()->buildMessage(m_wholeMsg, MessageType::ASSISTANT_MESSAGE));
     }
+}
+
+void Widget::loadMessages(QJsonObject messages)
+{
+    QJsonObject lastMsg = m_messages.last().toObject();
+    m_messages = messages["messages"].toArray();
+    m_messages.append(lastMsg);
 }
 

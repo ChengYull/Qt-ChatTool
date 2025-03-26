@@ -1,5 +1,9 @@
 #include "functool.h"
 #include <QDateTime>
+#include <QCoreApplication>
+#include <QFile>
+#include <QTextStream>
+#include "widgetUI.h">
 void FuncTool::newTool(const QString &name, const QString &description, const QJsonObject &params)
 {
     QJsonObject function;
@@ -37,17 +41,83 @@ QString FuncTool::getTime(const QJsonObject &arguments)
     return info;
 }
 
+QString FuncTool::saveMessages(const QJsonObject &arguments)
+{
+    QString result = "";
+    QString exeDir = QCoreApplication::applicationDirPath();
+    QString jsonPath = exeDir + "/messages.json";
+    QJsonObject messages;
+    messages["messages"] = arguments["messages"].toArray();
+    QByteArray jsonData = ChatPro::Get()->qJsonObjectToQByteArray(messages);
+    QFile file(jsonPath);
+    if(!file.open(QIODevice::WriteOnly | QIODevice::Text)){
+        result = "文件打开失败:" + jsonPath;
+        return result;
+    }
+    // 写入数据
+    file.write(jsonData);
+    file.close();
+    result = "成功保存记录 路径：" + jsonPath;
+    return result;
+}
+
+QString FuncTool::readMessages()
+{
+    QString result = "";
+    QString messagesPath = QCoreApplication::applicationDirPath() + "/messages.json";
+    if(!QFile::exists(messagesPath)){
+        result = "当前还没有记录哦";
+        return result;
+    }
+    QFile file(messagesPath);
+    if(!file.open(QIODevice::ReadOnly | QIODevice::Text)){
+        result = "找到了记录文件:" + messagesPath + "但是好像打不开";
+        return result;
+    }
+    QByteArray messages = file.readAll();
+    QJsonObject jsMessages = ChatPro::Get()->qByteArrayToQJsonObject(messages);
+    if(jsMessages.isEmpty()){
+        result = "记录文件为空";
+        return result;
+    }
+    emit loadMessages(jsMessages);
+    file.close();
+    result = "成功加载了记录";
+    return result;
+}
+
 QString FuncTool::executeFunction(const QString &name, const QJsonObject &arguments)
 {
+    qDebug() << "调用工具" << name;
     if(name == "get_weather")
         return getWeather(arguments);
     else if(name == "get_time")
         return getTime(arguments);
+    else if(name == "save_messages")
+        return saveMessages(arguments);
+    else if(name == "read_messages")
+        return readMessages();
     else
-        return "";
+        return "函数请求失败";
 }
 
 FuncTool::FuncTool() {
+    // 参数设置
+    QString param = R"(
+    {
+        "type": "",
+        "properties": {},
+        "required": []
+    })";
+    // 无参数
+    QString none_param = R"(
+    {
+        "type": "",
+        "properties": {},
+        "required": []
+    })";
+    m_noneParam = ChatPro::Get()->qStringToQJsonObject(none_param);
+
     QString tamplate = R"(
     {
         "type": "function",
@@ -70,13 +140,24 @@ FuncTool::FuncTool() {
     m_toolTamplate = ChatPro::Get()->qStringToQJsonObject(tamplate);
     m_tools.append(m_toolTamplate);
 
-    QString timeParam = R"(
+    // 获取时间
+    newTool("get_time", "用户需要获取时间时使用", m_noneParam);
+
+    // 保存记录
+    param = R"(
     {
-        "type": "",
-        "properties": {},
-        "required": []
+        "type": "object",
+        "properties": {
+            "type": "object",
+            "messages": [],
+            "description": "消息列表"
+        },
+        "required": ["messages"]
     })";
-    QJsonObject timeParams = ChatPro::Get()->qStringToQJsonObject(timeParam);
-    newTool("get_time", "用户需要获取时间时使用", timeParams);
+    QJsonObject saveParams = ChatPro::Get()->qStringToQJsonObject(param);
+    newTool("save_messages", "当用户需要保存记录时调用", saveParams);
+
+    // 读取记录
+    newTool("read_messages", "当用户需要读取记录时调用", m_noneParam);
 
 }
