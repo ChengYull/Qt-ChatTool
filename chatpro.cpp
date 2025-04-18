@@ -98,7 +98,8 @@ QJsonArray ChatPro::parseChunkResponse(const QByteArray &resp)
 
 QJsonObject ChatPro::getMessage(const QJsonObject &chunk)
 {
-    if(chunk.contains("choices")){
+    if(chunk.contains("choices") && !chunk["choices"].toArray().isEmpty()
+                                 && chunk["choices"].toArray()[0].toObject().contains("delta")){
         return chunk["choices"].toArray()[0].toObject()["delta"].toObject();
     }
     return QJsonObject();
@@ -106,6 +107,7 @@ QJsonObject ChatPro::getMessage(const QJsonObject &chunk)
 
 QString ChatPro::getContent(const QJsonObject &chunk)
 {
+    if(chunk.isEmpty()) return "";
     QJsonObject msg = getMessage(chunk);
     if(!msg.empty() && msg.contains("content")){
         return msg["content"].toString();
@@ -197,10 +199,10 @@ void ChatPro::ConnectReply(const QJsonArray &messages, const QJsonArray &tools)
         }
         QByteArray resp = reply->readAll();
         QJsonArray respArr = ChatPro::Get()->parseChunkResponse(resp);
-        //qDebug() << "Response: " << respArr;
+        qDebug() << "Response: " << respArr;
         //QScrollBar *scrollBar = ui->textEdit_record->verticalScrollBar();
         //qDebug() << "一次：";
-        for(auto chunk : respArr){
+        foreach(auto chunk, respArr){
             QJsonObject delta = ChatPro::Get()->getMessage(chunk.toObject());
             if(delta.empty()) continue;
             qDebug() << delta;

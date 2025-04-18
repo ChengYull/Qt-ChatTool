@@ -14,25 +14,27 @@ void FuncTool::newTool(const QString &name, const QString &description, const QJ
     m_tools.append(m_toolTamplate);
 }
 
+// 获取天气
 QString FuncTool::getWeather(const QJsonObject &arguments)
 {
     QString city = arguments["city"].toString();
     QJsonObject result;
     if("苏州" == city){
         result["weather"] = "晴天";
-        result["temperature"] = "11℃";
+        result["temperature"] = "19℃";
     }else if("杭州" == city){
         result["weather"] = "晴天";
-        result["temperature"] = "15℃";
+        result["temperature"] = "21℃";
     }else if("北京" == city){
         result["weather"] = "阴天";
-        result["temperature"] = "9℃";
+        result["temperature"] = "18℃";
     }else{
         result = QJsonObject();
     }
     return QString(QJsonDocument(result).toJson(QJsonDocument::Indented));;
 }
 
+// 获取时间
 QString FuncTool::getTime(const QJsonObject &arguments)
 {
     // 获取当前的日期和时间
@@ -41,6 +43,7 @@ QString FuncTool::getTime(const QJsonObject &arguments)
     return info;
 }
 
+// 保存记录
 QString FuncTool::saveMessages(const QJsonObject &arguments)
 {
     QString result = "";
@@ -67,7 +70,7 @@ QString FuncTool::saveMessages(const QJsonObject &arguments)
     result = "成功保存记录 路径：" + jsonPath;
     return result;
 }
-
+// 读取记录
 QString FuncTool::readMessages()
 {
     QString result = "";
@@ -147,6 +150,7 @@ FuncTool::FuncTool() {
             }
         }
     })";
+    // 获取天气
     m_toolTamplate = ChatPro::Get()->qStringToQJsonObject(tamplate);
     m_tools.append(m_toolTamplate);
 

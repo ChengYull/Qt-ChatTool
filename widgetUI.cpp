@@ -6,7 +6,6 @@ Widget::Widget(QWidget *parent)
     , ui(new Ui::Widget)
 {
     ui->setupUi(this);
-
     m_tools = FuncTool::Get()->Tools();
 
     // 初始化定时器（避免在槽函数中更新）
@@ -66,7 +65,7 @@ void Widget::requestEnd(QJsonArray toolCalls, bool isFunctionCall)
     // 如果是函数调用
     if(isFunctionCall){
         // 如果没有函数名直接返回
-        if(toolCalls[0].toObject()["function"].toObject()["name"].isNull())
+        if(toolCalls.isEmpty() || toolCalls[0].toObject()["function"].toObject()["name"].isNull())
             return;
         ChatPro::Get()->m_messages.append(ChatPro::Get()->buildMessage("", MessageType::ASSISTANT_MESSAGE, toolCalls));
         foreach(const QJsonValue &tool, toolCalls){
