@@ -46,8 +46,15 @@ QString FuncTool::saveMessages(const QJsonObject &arguments)
     QString result = "";
     QString exeDir = QCoreApplication::applicationDirPath();
     QString jsonPath = exeDir + "/messages.json";
+    QJsonArray messageArr = ChatPro::Get()->m_messages;
+    messageArr.removeLast();
+    messageArr.removeLast();
     QJsonObject messages;
-    messages["messages"] = arguments["messages"].toArray();
+    messages["messages"] = messageArr;
+    if(messages["messages"].toArray().count() <= 1){
+        result = "我们刚开始对话，没有对话记录";
+        return result;
+    }
     QByteArray jsonData = ChatPro::Get()->qJsonObjectToQByteArray(messages);
     QFile file(jsonPath);
     if(!file.open(QIODevice::WriteOnly | QIODevice::Text)){
@@ -80,8 +87,11 @@ QString FuncTool::readMessages()
         result = "记录文件为空";
         return result;
     }
-    emit loadMessages(jsMessages);
     file.close();
+    QJsonObject lastMsg = ChatPro::Get()->m_messages.last().toObject();
+    ChatPro::Get()->m_messages = jsMessages["messages"].toArray();
+    ChatPro::Get()->m_messages.append(lastMsg);
+
     result = "成功加载了记录";
     return result;
 }
@@ -144,18 +154,7 @@ FuncTool::FuncTool() {
     newTool("get_time", "用户需要获取时间时使用", m_noneParam);
 
     // 保存记录
-    param = R"(
-    {
-        "type": "object",
-        "properties": {
-            "type": "object",
-            "messages": [],
-            "description": "消息列表"
-        },
-        "required": ["messages"]
-    })";
-    QJsonObject saveParams = ChatPro::Get()->qStringToQJsonObject(param);
-    newTool("save_messages", "当用户需要保存记录时调用", saveParams);
+    newTool("save_messages", "当用户需要保存记录时调用", m_noneParam);
 
     // 读取记录
     newTool("read_messages", "当用户需要读取记录时调用", m_noneParam);

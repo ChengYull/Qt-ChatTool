@@ -20,6 +20,7 @@ class ChatPro : public QObject
 {
     Q_OBJECT
 public:
+    QJsonArray m_messages;
     // 单例模式
     static ChatPro *Get(){
         static ChatPro cp;
@@ -59,6 +60,7 @@ private:
     QString m_api_key = "sk-a90528958d5d4abb8621ef0886f85f7f1";
     QString m_model = "qwen-max";
     QList<QJsonArray> m_toolCallPieces;
+
     bool m_isFunction = false;
 protected:
     ChatPro();

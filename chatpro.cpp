@@ -149,17 +149,6 @@ QJsonArray ChatPro::parsetoolCallPieces(const QList<QJsonArray> &toolCallsChunks
                 state.metadata["function"] = QJsonObject{
                     {"name", funcObj["name"]}
                 };
-                // 当为保存记录时，手动装载参数（AI装载较长的messages信息，容易出错）
-                if(funcObj["name"].toString() == "save_messages"){
-                    QJsonArray rsToolCalls;
-                    toolCall["id"] = state.metadata["id"];
-                    toolCall["type"] = state.metadata["type"];
-                    funcObj["arguments"] = "{\"messages\":\"[]\"}";
-                    toolCall["function"] = funcObj;
-                    toolCall["index"] = 0;
-                    rsToolCalls.append(toolCall);
-                    return rsToolCalls;
-                }
             }
             if (argsVal.isString())
                 // 拼接字符串内容
@@ -241,6 +230,7 @@ void ChatPro::ConnectReply(const QJsonArray &messages, const QJsonArray &tools)
 
 ChatPro::ChatPro() {
     manager = new QNetworkAccessManager(this);
+    m_messages.append(buildMessage("你是一个非常活泼的AI，回复要积极主动", MessageType::SYSTEM_MESSAGE));
 }
 
 ChatPro::~ChatPro() {}

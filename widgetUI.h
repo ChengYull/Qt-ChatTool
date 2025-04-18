@@ -17,7 +17,7 @@ class Widget : public QWidget
 public:
     Widget(QWidget *parent = nullptr);
     ~Widget();
-    QJsonArray m_messages;
+    //QJsonArray m_messages;
     QString m_wholeMsg = "";
     QString m_record = "";
     QJsonArray m_tools;
@@ -28,7 +28,6 @@ private slots:
 
     void receiveMsg(QString msg);
     void requestEnd(QJsonArray toolCalls, bool isFunctionCall);
-    void loadMessages(QJsonObject messages);
 private:
     Ui::Widget *ui;
 };
